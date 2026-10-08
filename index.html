@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12120f">
+  <title>LidGen — база сообщений для лидов</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <button id="burger" class="iconbtn" aria-label="Меню" hidden>☰</button>
+    <div class="topbar-title" id="pageTitle">LidGen</div>
+    <div class="topbar-user" id="topUser"></div>
+  </header>
+
+  <nav id="drawer" class="drawer" hidden aria-label="Категории">
+    <div class="drawer-head">
+      <span>Категории</span>
+      <button class="iconbtn" id="drawerClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="drawerList" class="drawer-list"></div>
+  </nav>
+  <div id="scrim" class="scrim" hidden></div>
+
+  <main id="app" class="app"></main>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="modalCancel">Отмена</button>
+        <button class="btn danger" id="modalOk">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
