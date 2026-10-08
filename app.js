@@ -9,6 +9,7 @@
     profile: null,
     categories: [],
     addCategory: '',
+    addDraft: { url: '', text: '' },
     period: 'day',
     customDays: 14,
     historyFilter: 'all'
@@ -186,7 +187,7 @@
   });
   homeBtn.addEventListener('click', function () { go(''); });
 
-  function go(hash) { location.hash = hash; }
+  function go(hash) { location.hash = hash ? '/' + hash : '/'; }
 
   function route() {
     var h = location.hash.replace(/^#\/?/, '');
@@ -267,7 +268,6 @@
       state.session = r.data.session;
       return loadProfile().then(function () {
         if (!state.profile) { err.textContent = 'Профиль не найден, обратись к админу'; sb.auth.signOut(); state.session = null; return; }
-        logActivity('login', 'session', null, null);
         go('');
         render();
       });
@@ -330,6 +330,10 @@
       '<button class="btn ghost" id="back">Назад</button>' +
       '</div></div>';
     document.getElementById('pickCat').addEventListener('click', function () { renderDrawer(); openDrawer(); });
+    document.getElementById('fUrl').value = state.addDraft.url;
+    document.getElementById('fText').value = state.addDraft.text;
+    document.getElementById('fUrl').addEventListener('input', function (e) { state.addDraft.url = e.target.value; });
+    document.getElementById('fText').addEventListener('input', function (e) { state.addDraft.text = e.target.value; });
     document.getElementById('back').addEventListener('click', function () { go(''); });
     document.getElementById('save').addEventListener('click', function () {
       var url = document.getElementById('fUrl').value.trim();
@@ -357,6 +361,7 @@
           var lead = r.data[0];
           logActivity('lead_added', 'lead', lead.id, leadContext(lead));
           toast('Лид сохранён');
+          state.addDraft = { url: '', text: '' };
           document.getElementById('fUrl').value = '';
           document.getElementById('fText').value = '';
         });
@@ -395,8 +400,9 @@
     if (!catId) {
       setTitle('Удалить лид');
       leadCounts(false).then(function (counts) {
-        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div>';
+        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div><button class="btn ghost" data-back>Назад</button>';
         bindCatGo('delete');
+        bindBack();
       });
       return;
     }
@@ -436,8 +442,9 @@
     if (!catId) {
       setTitle('Изменить лид');
       leadCounts(false).then(function (counts) {
-        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div>';
+        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div><button class="btn ghost" data-back>Назад</button>';
         bindCatGo('edit');
+        bindBack();
       });
       return;
     }
@@ -524,8 +531,10 @@
       Promise.all([leadCounts(true), unsentTotal()]).then(function (res) {
         var counts = res[0], total = res[1];
         app.innerHTML = '<div class="fade"><div class="card row-between"><span>Всего к отправке</span><b style="font-size:20px">' + total + '</b></div>' +
-          '<div class="card">' + categoryButtons(counts) + '</div></div>';
+          '<div class="card">' + categoryButtons(counts) + '</div>' +
+          '<button class="btn ghost" data-back>Назад</button></div>';
         bindCatGo('get');
+        bindBack();
       });
       return;
     }
@@ -592,8 +601,9 @@
     if (!catId) {
       setTitle('История лидов');
       leadCounts(false).then(function (counts) {
-        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div>';
+        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div><button class="btn ghost" data-back>Назад</button>';
         bindCatGo('history');
+        bindBack();
       });
       return;
     }
@@ -820,6 +830,8 @@
         if (a.action === 'lead_sent') byUser[key].sent++;
       });
       var names = Object.keys(byUser).sort();
+      var isAdmin = state.profile.role === 'admin';
+      var feedRows = rows.filter(function (a) { return a.action !== 'login'; });
 
       app.innerHTML =
         '<div class="fade">' +
@@ -837,10 +849,13 @@
             '<td class="n">' + u.added + '</td><td class="n">' + u.sent + '</td></tr>';
         }).join('') : '<tr><td colspan="3" class="muted">Пользователей нет</td></tr>') +
         '</table></div>' +
-        '<div class="section-title">Лента действий</div>' +
-        '<div class="card"><ul class="feed">' +
-        (rows.length ? rows.slice(0, 80).map(feedItem).join('') : '<li>За период действий нет</li>') +
-        '</ul></div></div>';
+        (isAdmin ?
+          '<div class="section-title">Лента действий</div>' +
+          '<div class="card"><ul class="feed">' +
+          (feedRows.length ? feedRows.slice(0, 80).map(feedItem).join('') : '<li>За период действий нет</li>') +
+          '</ul></div>'
+          : '') +
+        '</div>';
 
       app.querySelectorAll('[data-period]').forEach(function (b) {
         b.addEventListener('click', function () { state.period = b.getAttribute('data-period'); renderStats(); });
@@ -884,9 +899,19 @@
     })[a] || a;
   }
 
-  function bindBack() {
+  function parentRoute() {
+    var r = route();
+    if (r.name === 'delete') return r.a ? 'delete' : '';
+    if (r.name === 'edit') return r.b ? 'edit/' + r.a : (r.a ? 'edit' : '');
+    if (r.name === 'get') return r.b ? 'get/' + r.a : (r.a ? 'get' : '');
+    if (r.name === 'history') return r.a ? 'history' : '';
+    return '';
+  }
+
+  function bindBack(target) {
+    var t = target !== undefined ? target : parentRoute();
     app.querySelectorAll('[data-back]').forEach(function (b) {
-      b.addEventListener('click', function () { history.back(); });
+      b.addEventListener('click', function () { go(t); });
     });
   }
   function bindCatGo(prefix) {
