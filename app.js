@@ -597,11 +597,39 @@
     });
   }
 
+  function historyCounts() {
+    return sb.from('leads').select('category_id, sent_at').then(function (r) {
+      var per = {};
+      var tot = { total: 0, sent: 0, unsent: 0 };
+      (r.data || []).forEach(function (l) {
+        var p = per[l.category_id] || (per[l.category_id] = { total: 0, sent: 0, unsent: 0 });
+        p.total++; tot.total++;
+        if (l.sent_at) { p.sent++; tot.sent++; } else { p.unsent++; tot.unsent++; }
+      });
+      return { per: per, tot: tot };
+    });
+  }
+
   function renderHistory(catId) {
     if (!catId) {
       setTitle('История лидов');
-      leadCounts(false).then(function (counts) {
-        app.innerHTML = '<div class="card fade">' + categoryButtons(counts) + '</div><button class="btn ghost" data-back>Назад</button>';
+      historyCounts().then(function (res) {
+        if (!state.categories.length) {
+          app.innerHTML = '<div class="empty fade">Категорий пока нет.</div><button class="btn ghost" data-back>Назад</button>';
+          bindBack();
+          return;
+        }
+        app.innerHTML = '<div class="fade">' +
+          '<div class="card"><div class="row-between"><span>Всего лидов</span><b style="font-size:20px">' + res.tot.total + '</b></div>' +
+          '<div class="lead-meta" style="margin-top:8px">' +
+          '<span class="sent-badge">отправлено ' + res.tot.sent + '</span>' +
+          '<span class="new-badge">не отправлено ' + res.tot.unsent + '</span></div></div>' +
+          '<div class="card">' + state.categories.map(function (c) {
+            var p = res.per[c.id] || { total: 0, sent: 0, unsent: 0 };
+            return '<button class="catbtn" data-catgo="' + esc(c.id) + '"><span>' + esc(c.name) +
+              '</span><span class="cnt">' + p.total + ' · отпр. ' + p.sent + ' · не отпр. ' + p.unsent + '</span></button>';
+          }).join('') + '</div>' +
+          '<button class="btn ghost" data-back>Назад</button></div>';
         bindCatGo('history');
         bindBack();
       });
