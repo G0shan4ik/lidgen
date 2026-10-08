@@ -288,7 +288,7 @@
         social_url: url,
         message_text: text,
         created_by: state.profile.id
-      }).then(function (r) {
+      }).select().then(function (r) {
         if (r.error) { err.textContent = r.error.message; return; }
         logActivity('lead_added', 'lead', r.data ? r.data[0].id : null, url);
         toast('Лид сохранён');
@@ -453,10 +453,13 @@
 
   function renderGetLead(catId, leadId) {
     setTitle('Лид');
-    sb.from('leads').select('*, profiles(name)').eq('id', leadId).maybeSingle().then(function (r) {
+    sb.from('leads').select('*').eq('id', leadId).maybeSingle().then(function (r) {
       var l = r.data;
       if (!l) { app.innerHTML = '<div class="empty">Лид не найден</div>'; return; }
-      var author = l.profiles ? l.profiles.name : '';
+      return sb.from('profiles').select('id, name').then(function (pr) {
+        var map = {};
+        (pr.data || []).forEach(function (p) { map[p.id] = p.name; });
+        var author = map[l.created_by] || '';
       app.innerHTML =
         '<div class="card">' +
         '<div class="muted" style="margin-bottom:8px">' + esc(catName(l.category_id)) + '</div>' +
@@ -482,6 +485,7 @@
           });
         });
       });
+      });
     });
   }
 
@@ -506,11 +510,11 @@
         var err = document.getElementById('ce');
         err.textContent = '';
         if (!name) { err.textContent = 'Введи название категории'; return; }
-        sb.from('categories').insert({ name: name, created_by: state.profile.id }).then(function (r) {
+        sb.from('categories').insert({ name: name, created_by: state.profile.id }).select().then(function (r) {
           if (r.error) { err.textContent = r.error.message; return; }
           logActivity('category_created', 'category', r.data[0].id, name);
           toast('Категория создана');
-          renderCategories();
+          render();
         });
       });
       app.querySelectorAll('[data-cdel]').forEach(function (b) {
@@ -522,7 +526,7 @@
               if (d.error) { toast('Ошибка: ' + d.error.message); return; }
               logActivity('category_deleted', 'category', id, catName(id));
               toast('Категория удалена');
-              renderCategories();
+              render();
             });
           });
         });
@@ -574,19 +578,10 @@
         var err = document.getElementById('ue');
         err.textContent = '';
         if (!name || !login || !pass) { err.textContent = 'Заполни все три поля'; return; }
-        sb.auth.getSession().then(function (s) {
-          return fetch(CFG.supabaseUrl + '/functions/v1/' + CFG.edgeFunction, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + s.data.session.access_token,
-              apikey: CFG.anonKey
-            },
-            body: JSON.stringify({ name: name, login: login, password: pass })
-          });
-        }).then(function (res) { return res.json(); }).then(function (j) {
-          if (!j.ok) { err.textContent = j.error || 'Ошибка создания'; return; }
-          toast('Пользователь ' + j.login + ' создан');
+        sb.rpc('admin_create_user', { p_name: name, p_login: login, p_pass: pass }).then(function (r) {
+          if (r.error) { err.textContent = r.error.message; return; }
+          if (r.data && r.data.error) { err.textContent = r.data.error; return; }
+          toast('Пользователь ' + login + ' создан');
           document.getElementById('un').value = '';
           document.getElementById('ul').value = '';
           document.getElementById('up').value = '';
