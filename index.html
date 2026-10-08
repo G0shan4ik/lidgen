@@ -11,7 +11,8 @@
 </head>
 <body>
   <header class="topbar">
-    <button id="burger" class="iconbtn" aria-label="Меню" hidden>☰</button>
+    <button id="homeBtn" class="iconbtn" aria-label="В главное меню" hidden>🏠</button>
+    <button id="burger" class="iconbtn" aria-label="Категории" hidden>☰</button>
     <div class="topbar-title" id="pageTitle">LidGen</div>
     <div class="topbar-user" id="topUser"></div>
   </header>
@@ -31,6 +32,9 @@
     <div class="modal-card">
       <div class="modal-title" id="modalTitle"></div>
       <div class="modal-body" id="modalBody"></div>
+      <div id="modalInputWrap" hidden>
+        <input id="modalInput" type="text" autocomplete="off">
+      </div>
       <div class="modal-actions">
         <button class="btn ghost" id="modalCancel">Отмена</button>
         <button class="btn danger" id="modalOk">Подтвердить</button>
