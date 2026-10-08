@@ -1,0 +1,32 @@
+name: health
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Pages отвечает
+        run: curl -fsS --max-time 30 https://g0shan4ik.github.io/lidgen/ > /dev/null
+
+      - name: Supabase REST отвечает
+        run: |
+          curl -fsS --max-time 30 \
+            -H "apikey: ${{ secrets.LIDGEN_ANON }}" \
+            "https://pkmehobbdawxeidlatzq.supabase.co/rest/v1/categories?select=id" > /dev/null
+
+      - name: Создать issue при падении
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --repo G0shan4ik/lidgen \
+            --title "Health: сайт или Supabase не отвечают" \
+            --body "Автоматическая проверка доступности упала. Проверь GitHub Pages и Supabase." \
+            || true
