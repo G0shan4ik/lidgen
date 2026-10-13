@@ -200,8 +200,7 @@
       state.session = r.data.session;
       if (!state.session) { go('login'); render(); return; }
       return loadProfile().then(function () {
-        if (!location.hash || location.hash === '#/login') go('');
-        render();
+        if (location.hash === '#/') { render(); } else { go(''); }
       });
     });
   }
@@ -231,6 +230,7 @@
         case 'edit': r.b ? renderEditForm(r.a, r.b) : renderEditList(r.a); break;
         case 'get': r.b ? renderGetLead(r.a, r.b) : renderGetList(r.a); break;
         case 'history': renderHistory(r.a); break;
+        case 'check': renderCheck(); break;
         case 'categories': renderCategories(); break;
         case 'settings': renderSettings(); break;
         case 'stats': renderStats(); break;
@@ -290,6 +290,7 @@
         ['edit', '✏️', 'Изменить лид', ''],
         ['get', '📨', 'Отправить сообщение', unsent ? 'к отправке: ' + unsent : ''],
         ['history', '🕘', 'История лидов', ''],
+        ['check', '🔎', 'Проверка', ''],
         ['categories', '🗂', 'Создать категорию', ''],
         ['stats', '📊', 'Статистика', ''],
         ['settings', '⚙️', 'Настройки', '']
@@ -595,6 +596,38 @@
         });
       });
     });
+  }
+
+  function renderCheck() {
+    setTitle('Проверка');
+    app.innerHTML = '<div class="card fade">' +
+      '<label for="chkUrl">Ссылка на соцсеть</label>' +
+      '<input id="chkUrl" type="url" inputmode="url" placeholder="https://instagram.com/..." autocomplete="off">' +
+      '<button class="btn" id="chkBtn" style="margin-top:12px">Проверить</button>' +
+      '<div id="chkRes" class="check-res"></div>' +
+      '</div>' +
+      '<button class="btn ghost" data-back>Назад</button>';
+    bindBack();
+    var input = document.getElementById('chkUrl');
+    var res = document.getElementById('chkRes');
+    function run() {
+      var url = input.value.trim();
+      if (!url) { res.className = 'check-res bad'; res.textContent = 'Вставь ссылку'; return; }
+      res.className = 'check-res'; res.textContent = 'Проверяю…';
+      sb.from('leads').select('social_url, category_id, sent_at').eq('social_url_norm', normUrl(url)).maybeSingle().then(function (r) {
+        if (r.error) { res.className = 'check-res bad'; res.textContent = 'Ошибка: ' + r.error.message; return; }
+        if (r.data) {
+          res.className = 'check-res ok';
+          res.innerHTML = '✅ Ссылка есть в базе<br><span class="muted">Категория: ' + esc(catName(r.data.category_id)) +
+            ' · ' + (r.data.sent_at ? 'письмо отправлено' : 'письмо не отправлено') + '</span>';
+        } else {
+          res.className = 'check-res bad';
+          res.textContent = '❌ Ссылки нет в базе';
+        }
+      });
+    }
+    document.getElementById('chkBtn').addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
   }
 
   function historyCounts() {

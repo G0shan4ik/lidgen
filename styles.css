@@ -395,3 +395,15 @@ tr.me td { background: rgba(200, 162, 74, 0.08); }
 .feed-spoiler.open { display: block; -webkit-line-clamp: unset; white-space: normal; }
 
 #modalInputWrap { margin-top: 12px; }
+
+.check-res {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 0;
+}
+.check-res:empty { display: none; }
+.check-res.ok { border: 1px solid rgba(127, 176, 105, 0.5); color: var(--good); background: rgba(127, 176, 105, 0.08); }
+.check-res.bad { border: 1px solid rgba(217, 105, 95, 0.5); color: var(--bad); background: rgba(217, 105, 95, 0.08); }
